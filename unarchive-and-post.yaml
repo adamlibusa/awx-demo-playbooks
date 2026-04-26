@@ -1,0 +1,39 @@
+---
+- name: Extract ZIP, read value, call API, and print response
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    zip_path: "archive.zip"
+    extract_path: "./"
+
+  tasks:
+    - name: Extract the ZIP file
+      ansible.builtin.unarchive:
+        src: "{{ zip_path }}"
+        dest: "./"
+        remote_src: true
+
+    - name: Read info.txt content
+      ansible.builtin.slurp:
+        src: "./info.txt"
+      register: info_file
+
+    - name: Decode content
+      ansible.builtin.set_fact:
+        extracted_value: "{{ info_file.content | b64decode | trim }}"
+
+    - name: Output the read string
+      ansible.builtin.debug:
+        var: extracted_value
+
+    - name: Call echo API
+      ansible.builtin.uri:
+        url: "https://echo.zuplo.io/?my-param={{ extracted_value }}"
+        method: GET
+        return_content: true
+      register: api_response
+
+    - name: Output API response
+      ansible.builtin.debug:
+        msg: "{{ api_response.content }}"
